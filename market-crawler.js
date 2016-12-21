@@ -5,9 +5,19 @@ var humanizeDuration = require('humanize-duration');
 
 // Config
 var endpoint = 'https://api.guildwars2.com/v2';
-var DbHost = 'localhost';
+var DbHost = process.env.INFLUX_PORT_8086_TCP_ADDR || 'localhost';
 
 var client = influx({ host: DbHost, database: 'prices' });
+
+// First run create database.
+client.createDatabase('prices', function (err, msg){
+  if (err && err.message.indexOf("exist") == -1) {
+    console.log("Cannot create db", err);
+    process.exit(1);
+  }else{
+    console.log('Created database.');
+  };
+});
 
 // Batch up ID's to minimise API requests. The Guild Wars API has a limit of 200
 // ID's per request.
