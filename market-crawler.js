@@ -1,21 +1,24 @@
 var async = require('async');
 var request = require('request');
 var influx = require('influx');
-var humanizeDuration = require('humanize-duration')
+var humanizeDuration = require('humanize-duration');
 
 // Config
 var endpoint = 'https://api.guildwars2.com/v2';
 var DbHost = 'localhost';
-var ShipSize = 200;
-var QueueSize = 10;
 
 var client = influx({ host: DbHost, database: 'prices' });
 
+// Batch up ID's to minimise API requests. The Guild Wars API has a limit of 200
+// ID's per request.
+var ShipSize = 200;
 var CargoShip = async.cargo(function (listings, callback){
   RequestQueue.push(endpoint+'/commerce/prices?ids='+listings.join(','));
   callback();
 }, ShipSize);
 
+// Number of concurrent requests.
+var QueueSize = 10;
 var RequestQueue = async.queue(function (url, callback){
   request.get(url, function (err, data){
     if(err){
@@ -56,6 +59,7 @@ RequestQueue.drain = function(){
   console.log('All items processed in '+humanizeDuration(new Date() - startTime));
 };
 
+// Takes a list of item ID's and populates the 'items' object of ID -> name.
 var items = {};
 function GetItemNames(ids){
   var ItemRequestQueue = async.queue(function (url, callback){
@@ -111,7 +115,7 @@ function CrawlListings(){
 
     if(!data){
       console.log('No data!');
-      return
+      return;
     };
     
     try{
@@ -119,8 +123,9 @@ function CrawlListings(){
     }catch(e){
       console.log(e);
       return;
-    }
+    };
 
+    // On the first run populate the object mapping item ID's to names.
     if(Object.keys(items).length === 0){
       console.log('Populating the in memory item name database...');
       GetItemNames(listings);
@@ -128,9 +133,10 @@ function CrawlListings(){
       async.each(listings, function (listing){
         CargoShip.push(listing);
       });
-    }
+    };
   });
 };
 
+// Run once and then run every minute after that.
 CrawlListings();
 setInterval(CrawlListings, 1 * 60 * 1000);
