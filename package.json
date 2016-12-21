@@ -1,0 +1,14 @@
+{
+  "name":"gw2-crawler",
+  "public":false,
+  "version":"0.1.2",
+  "scripts":{
+    "start": "node ./market-crawler.js"
+  },
+  "dependencies":{
+    "async":"^2.1.2",
+    "humanize-duration":"^3.9.1",
+    "influx":"^4.2.3",
+    "request":"^2.76.0"
+  }
+}
